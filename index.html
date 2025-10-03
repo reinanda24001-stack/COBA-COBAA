@@ -5,6 +5,90 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Spesial Untukmu!</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script let placedPieces = 0;
+const puzzleImageUrl = memories[17].imageUrl; // Ganti angka 17 jika ingin pakai foto lain dari array memories
+
+function createPuzzle() {
+    const board = document.getElementById('puzzle-board');
+    const piecesContainer = document.getElementById('puzzle-pieces');
+    if (!board || !piecesContainer) return;
+
+    // Mendefinisikan bentuk hati pada grid 4x4. 1 = slot aktif, 0 = kosong.
+    const heartShape = [
+        0, 1, 1, 0,
+        1, 1, 1, 1,
+        1, 1, 1, 1,
+        0, 1, 1, 0
+    ];
+    const numTotalSlots = 16;
+    const numPieces = heartShape.filter(s => s === 1).length; // Total 12 kepingan
+
+    const boardSize = board.clientWidth;
+    const pieceSize = boardSize / 4;
+    let pieces = [];
+    
+    board.innerHTML = '';
+    piecesContainer.innerHTML = '';
+    board.classList.remove('solved');
+    document.getElementById('puzzle-success').classList.add('hidden');
+    placedPieces = 0;
+
+    for (let i = 0; i < numTotalSlots; i++) {
+        const slot = document.createElement('div');
+        if (heartShape[i] === 1) {
+            slot.className = 'puzzle-slot';
+            slot.dataset.index = i;
+
+            const piece = document.createElement('div');
+            piece.id = `piece-${i}`;
+            piece.className = 'puzzle-piece';
+            piece.draggable = true;
+            piece.style.backgroundImage = `url(${puzzleImageUrl})`;
+            piece.style.width = `${pieceSize}px`;
+            piece.style.height = `${pieceSize}px`;
+            piece.style.backgroundSize = `${boardSize}px ${boardSize}px`;
+
+            const row = Math.floor(i / 4);
+            const col = i % 4;
+            piece.style.backgroundPosition = `-${col * pieceSize}px -${row * pieceSize}px`;
+            pieces.push(piece);
+        } else {
+            slot.className = 'puzzle-slot-empty';
+        }
+        board.appendChild(slot);
+    }
+
+    pieces.sort(() => Math.random() - 0.5);
+    pieces.forEach(p => piecesContainer.appendChild(p));
+
+    piecesContainer.addEventListener('dragstart', e => {
+        if (e.target.classList.contains('puzzle-piece')) {
+            e.dataTransfer.setData('text/plain', e.target.id);
+        }
+    });
+
+    board.addEventListener('dragover', e => e.preventDefault());
+    board.addEventListener('drop', e => {
+        e.preventDefault();
+        if (e.target.classList.contains('puzzle-slot') && e.target.children.length === 0) {
+            const pieceId = e.dataTransfer.getData('text/plain');
+            const piece = document.getElementById(pieceId);
+            const pieceIndex = pieceId.split('-')[1];
+            
+            if (e.target.dataset.index === pieceIndex) {
+                e.target.appendChild(piece);
+                piece.draggable = false;
+                piece.classList.add('placed');
+                placedPieces++;
+                if (placedPieces === numPieces) {
+                    document.getElementById('puzzle-board').classList.add('solved');
+                    document.getElementById('puzzle-success').classList.remove('hidden');
+                    startConfetti();
+                }
+            }
+        }
+    });</script>
+}
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Poppins:wght@400;500;700&display=swap" rel="stylesheet">
@@ -633,7 +717,184 @@
             }
         });
     });
+/* Bouquet Styles */
+#reject-bouquet-btn { transition: all 0.3s ease; }
+#accept-bouquet-btn, #reject-bouquet-btn {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+}
+#accept-bouquet-btn {
+    transform: translate(-110%, -50%);
+}
+#reject-bouquet-btn {
+    transform: translate(10%, -50%);
+}
+@keyframes fly-heart {
+    0% { transform: translateY(0) scale(1); opacity: 1; }
+    100% { transform: translateY(-150px) scale(0.5); opacity: 0; }
+}
+.flying-heart {
+    position: absolute;
+    color: #ec407a;
+    animation: fly-heart 1.5s ease-out forwards;
+}
+/* Puzzle Styles */
+.puzzle-wrapper {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 2rem;
+    align-items: flex-start;
+}
+@media (min-width: 768px) {
+    .puzzle-wrapper {
+        grid-template-columns: 2fr 1fr;
+    }
+    // Bouquet Logic
+const rejectBtn = document.getElementById('reject-bouquet-btn');
+const acceptBtn = document.getElementById('accept-bouquet-btn');
+const buttonContainer = document.getElementById('bouquet-buttons');
 
+rejectBtn.addEventListener('mouseover', () => {
+    const containerRect = buttonContainer.getBoundingClientRect();
+    const btnRect = rejectBtn.getBoundingClientRect();
+    const newTop = Math.random() * (containerRect.height - btnRect.height);
+    const newLeft = Math.random() * (containerRect.width - btnRect.width);
+    rejectBtn.style.top = `${newTop}px`;
+    rejectBtn.style.left = `${newLeft}px`;
+    const currentScale = parseFloat(getComputedStyle(acceptBtn).transform.split(',')[3] || 1);
+    acceptBtn.style.transform = `translate(-110%, -50%) scale(${currentScale + 0.1})`;
+});
+
+acceptBtn.addEventListener('click', () => {
+    document.getElementById('bouquet-interaction').classList.add('hidden');
+    document.getElementById('bouquet-accepted-message').classList.remove('hidden');
+    startConfetti();
+    const bouquetImg = document.querySelector('#bouquet img');
+    const rect = bouquetImg.getBoundingClientRect();
+
+    for(let i = 0; i < 20; i++) {
+        const heart = document.createElement('div');
+        heart.innerHTML = '❤️';
+        heart.className = 'flying-heart';
+        heart.style.position = 'fixed';
+        heart.style.left = `${rect.left + rect.width / 2 + (Math.random() - 0.5) * 50}px`;
+        heart.style.top = `${rect.top + rect.height / 2}px`;
+        heart.style.fontSize = `${Math.random() * 1.5 + 1}rem`;
+        heart.style.animationDelay = `${Math.random() * 0.5}s`;
+        document.body.appendChild(heart);
+        heart.addEventListener('animationend', () => heart.remove());
+    }
+});
+
+// Puzzle resize logic
+let resizeTimer;
+window.addEventListener('resize', () => {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(() => {
+        if (!document.getElementById('main-content').classList.contains('hidden')) {
+            createPuzzle();
+        }
+    }, 250);
+});
+}
+#puzzle-board {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    grid-template-rows: repeat(4, 1fr);
+    width: 90vw;
+    max-width: 480px;
+    aspect-ratio: 1 / 1;
+    margin: 0 auto;
+    background-color: rgba(255, 240, 243, 0.7); /* Added base color */
+    border: none;
+    transition: filter 0.5s ease-in-out;
+    clip-path: url(#heart-clip-path); /* Applying heart shape */
+    -webkit-clip-path: url(#heart-clip-path); /* Safari compatibility */
+}
+#puzzle-board.solved {
+    filter: drop-shadow(0 0 8px #ffc0cb) drop-shadow(0 0 15px #f8bbd0);
+}
+.puzzle-slot {
+    border: 1px dashed #fce4ec;
+    background-color: transparent; /* Changed to transparent */
+}
+.puzzle-slot-empty {
+    pointer-events: none;
+}
+#puzzle-pieces {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    justify-items: center;
+}
+ @media (min-width: 768px) {
+    #puzzle-pieces {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+.puzzle-piece {
+    border: 1px solid #f48fb1;
+    cursor: grab;
+    transition: transform 0.2s;
+}
+.puzzle-piece:active {
+    cursor: grabbing;
+    transform: scale(1.1);
+    z-index: 10;
+}
+.puzzle-piece.placed {
+    cursor: default;
+}
+    <!-- SVG untuk bentuk hati, letakkan di awal 
+    <body>
+        <svg width="0" height="0" style="position:absolute;z-index:-1;">
+        <defs>
+            <clipPath id="heart-clip-path" clipPathUnits="objectBoundingBox">
+                <path d="M0.5,1 L0.259,0.667 C0,0.333 0.167,0 0.5,0.222 C0.833,0 1,0.333 0.741,0.667 L0.5,1 Z"></path>
+            </clipPath>
+        </defs>
+    </svg>
+
+    <!-- Pastikan ada link navigasi ini juga -->
+    <a href="#puzzle" onclick="handleSmoothScroll(event, '#puzzle')" class="text-pink-500 hover:text-pink-700 font-semibold transition-colors duration-300 px-3 py-2 rounded-md text-sm md:text-base">Puzzle Cinta</a>
+    <a href="#bouquet" onclick="handleSmoothScroll(event, '#bouquet')" class="text-pink-500 hover:text-pink-700 font-semibold transition-colors duration-300 px-3 py-2 rounded-md text-sm md:text-base">Bunga Untukmu</a>
+    
+    <!-- Bagian Puzzle -->
+    <section id="puzzle" class="py-16 md:py-24 px-4 text-center">
+        <h2 class="text-4xl md:text-6xl font-great-vibes text-pink-500 mb-8">Satu Puzzle Untukmu</h2>
+        <p class="max-w-3xl mx-auto mb-12 text-lg">Salah satu kenangan terbaik kita tersembunyi di sini. Susun kembali kepingan puzzle ini untuk melihatnya!</p>
+        <div class="max-w-4xl mx-auto bg-white/70 backdrop-blur-sm p-4 md:p-8 rounded-lg shadow-lg">
+            <div id="puzzle-success" class="hidden animate-fade-in text-2xl font-bold text-pink-600 mb-4">
+                <p>Hebat! Kamu berhasil menyelesaikannya! ❤️</p>
+            </div>
+            <div class="puzzle-wrapper">
+                <div class="flex justify-center order-first md:order-last">
+                    <div id="puzzle-board"></div>
+                </div>
+                <div id="puzzle-pieces" class="bg-white p-4 rounded-lg shadow-inner self-start"></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Bagian Buket Bunga -->
+    <section id="bouquet" class="py-16 md:py-24 px-4 text-center">
+        <h2 class="text-4xl md:text-6xl font-great-vibes text-pink-500 mb-8">Bunga Spesial Untukmu</h2>
+        <div class="max-w-3xl mx-auto bg-white/70 backdrop-blur-sm p-8 md:p-12 rounded-lg shadow-lg text-center">
+            <img src="https://i.ibb.co/L5Q2bB8/pixel-flowers.png" alt="Buket Bunga" class="mx-auto mb-6 w-64 h-auto transition-transform duration-500">
+            <div id="bouquet-interaction">
+                <p class="mb-8 text-lg">Bunga ini mungkin tidak seindah bunga asli, tapi dengan adanya gambar bunga yang ditujukan kepadamu ini mengandung makna dibaliknya, tolong diterima yh.</p>
+                <div id="bouquet-buttons" class="relative h-20">
+                    <button id="accept-bouquet-btn" class="bg-green-500 text-white font-bold py-3 px-10 rounded-full shadow-lg hover:bg-green-600 transition-all duration-300 transform hover:scale-110">Terima</button>
+                    <button id="reject-bouquet-btn" class="bg-red-500 text-white font-bold py-3 px-10 rounded-full shadow-lg hover:bg-red-600 transition-all duration-300 transform hover:scale-110">Tidak</button>
+                </div>
+            </div>
+            <div id="bouquet-accepted-message" class="hidden animate-fade-in">
+                <p class="text-3xl font-bold text-pink-600">Terima kasih, sayang! Aku tahu kamu akan menerimanya. I Love You!</p>
+            </div>
+        </div>
+    </section>
+    
 </script>
 <script type="module" src="/index.tsx"></script>
 </body>
